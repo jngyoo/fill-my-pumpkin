@@ -375,3 +375,9 @@ main { z-index: 1; }
   .ghost.float, .ghost.peek, .bat, .bat .wing, body::before { animation: none; }
   .bat { display: none; }
 }
+
+#invite { margin: -4px 0 8px; }
+#jump { margin-top: 18px; }
+.bounce { animation: bounce 2.4s ease-in-out infinite; }
+@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 88% { transform: translateY(-6px); } 94% { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .bounce { animation: none; } }
