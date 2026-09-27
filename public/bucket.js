@@ -39,7 +39,7 @@ function candyPosition(i) {
   const slot = i - start;
   const width = perRow / 7; // fraction of pile width this row spans
   const x = 50 + (((slot + 0.5) / perRow) - 0.5) * 100 * width + (seeded(i) - 0.5) * 8;
-  const bottom = row * 17 + seeded(i + 7) * 5;
+  const bottom = row * 14 + seeded(i + 7) * 5;
   const rot = Math.round((seeded(i + 3) - 0.5) * 70);
   return { x, bottom, rot };
 }

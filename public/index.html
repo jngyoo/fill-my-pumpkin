@@ -49,7 +49,7 @@
     if (mine.length) {
       document.querySelector('#mine').classList.remove('hidden');
       document.querySelector('#mine-list').innerHTML = mine
-        .map((p) => `<a class="btn ghost" href="/p/${p.id}"></a>`)
+        .map((p) => `<a class="btn outline" href="/p/${p.id}"></a>`)
         .join('');
       document.querySelectorAll('#mine-list a').forEach((a, i) => { a.textContent = `🎃 ${mine[i].name}'s pumpkin`; });
     }
