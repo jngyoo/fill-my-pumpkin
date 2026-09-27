@@ -11,6 +11,8 @@ const Spooky = (() => {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
+      // iOS 17+: play through the silent switch like a media app (the 🔊 button still mutes).
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* unsupported */ }
       ctx = new AC();
       master = ctx.createGain();
       master.gain.value = 0.6;
@@ -86,7 +88,7 @@ const Spooky = (() => {
   // quiet music-box loop in a spooky minor key
   const MELODY = [440, 523, 659, 831, 659, 523, 440, 415, 392, 494, 587, 740, 587, 494, 440, 0];
   function startAmbient() {
-    if (ambientTimer || muted || !audio()) return;
+    if (ambientTimer || muted || !audio() || ctx.state !== 'running') return;
     let i = 0;
     ambientTimer = setInterval(() => {
       const f = MELODY[i++ % MELODY.length];
@@ -99,7 +101,29 @@ const Spooky = (() => {
     ambientTimer = null;
   }
 
-  function play(name) { if (sounds[name]) sounds[name](); }
+  // Phones only allow audio after a tap *ends* (touchend/click), and iOS also wants
+  // something played inside that gesture. Call this from those events.
+  function unlock() {
+    const ac = audio();
+    if (!ac) return;
+    const blip = ac.createBufferSource();
+    blip.buffer = ac.createBuffer(1, 1, 22050);
+    blip.connect(ac.destination);
+    blip.start(0);
+    ac.resume().then(() => {
+      if (ac.state !== 'running') return;
+      ['touchend', 'click', 'keydown'].forEach((type) => window.removeEventListener(type, unlock, true));
+      startAmbient();
+    });
+  }
+
+  function play(name) {
+    const ac = audio();
+    if (!ac || !sounds[name]) return;
+    // If the context is still waking up, wait so notes aren't scheduled on a frozen clock.
+    if (ac.state === 'running') sounds[name]();
+    else ac.resume().then(() => sounds[name]());
+  }
 
   // ---------- visuals ----------
   const GHOST_SVG = `
@@ -184,13 +208,12 @@ const Spooky = (() => {
       muted = !muted;
       try { localStorage.setItem('pumpkin-muted', muted ? '1' : '0'); } catch { /* ignore */ }
       paint();
-      if (muted) stopAmbient(); else { startAmbient(); play('boo'); }
+      if (muted) stopAmbient(); else { unlock(); play('boo'); }
     });
     document.body.appendChild(btn);
 
-    // browsers only allow audio after a tap, so start the music on the first one
-    const kick = () => { startAmbient(); window.removeEventListener('pointerdown', kick); };
-    window.addEventListener('pointerdown', kick);
+    // browsers only allow audio after a tap, so unlock (and start the music) on the first one
+    ['touchend', 'click', 'keydown'].forEach((type) => window.addEventListener(type, unlock, true));
   }
 
   return { play, decorate };
