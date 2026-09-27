@@ -1,7 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "pumpkin", "runtimeExecutable": "node", "runtimeArgs": ["server.js"], "port": 3000 },
-    { "name": "pumpkin-unlocked", "runtimeExecutable": "node", "runtimeArgs": ["server.js"], "port": 3001, "env": { "PORT": "3001", "UNLOCK_AT": "2020-01-01T00:00:00Z", "DB_PATH": "pumpkins-test.db" } }
+    { "name": "pumpkin", "runtimeExecutable": "node", "runtimeArgs": ["dev-server.js"], "port": 3000 },
+    { "name": "pumpkin-unlocked", "runtimeExecutable": "node", "runtimeArgs": ["dev-server.js"], "port": 3001, "env": { "PORT": "3001", "UNLOCK_AT": "2020-01-01T00:00:00Z", "DB_PATH": "pumpkins-test.db" } }
   ]
 }

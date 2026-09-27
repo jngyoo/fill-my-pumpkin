@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "Friends drop anonymous candy notes in your pumpkin. Opens on Halloween.",
-  "main": "server.js",
-  "engines": { "node": ">=22.5" },
+  "engines": {
+    "node": ">=22.5"
+  },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "dev:unlocked": "UNLOCK_AT=2020-01-01T00:00:00Z DB_PATH=pumpkins-test.db node server.js"
+    "start": "node dev-server.js",
+    "dev": "node --watch dev-server.js",
+    "dev:unlocked": "UNLOCK_AT=2020-01-01T00:00:00Z DB_PATH=pumpkins-test.db node dev-server.js"
   }
 }
