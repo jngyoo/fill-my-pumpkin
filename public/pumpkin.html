@@ -60,7 +60,6 @@
       <label>🧪 Demo pumpkin</label>
       <p class="sub" style="text-align:left;margin:0">This is what opening your pumpkin looks like on Halloween. It unlocks 10 seconds after the page loads. Nothing here is real.</p>
       <button class="btn outline" type="button" onclick="location.reload()">↻ Replay</button>
-      <a class="btn" href="/">🎃 Make my real pumpkin</a>
     </section>
 
     <!-- owner: share -->
@@ -84,7 +83,7 @@
     <!-- visitor after unlock / missing pumpkin -->
     <section class="card hidden" id="closed">
       <p class="sub" style="margin:0" id="closed-msg"></p>
-      <a class="btn" href="/">🎃 Make my own pumpkin</a>
+      <a class="btn" href="/" id="closed-make">🎃 Make my own pumpkin</a>
     </section>
 
     <footer><a href="/">Fill My Pumpkin</a> · opens Oct 31</footer>
@@ -193,7 +192,9 @@
         Reveal.hide();
       }
       if (!isOwner && unlocked) {
-        $('#closed-msg').textContent = `${name}'s pumpkin has been opened! 🎉 Candy season is over, but you can still carve your own.`;
+        // After Halloween it's too late to start a pumpkin, so no "make your own" here.
+        $('#closed-msg').textContent = `${name}'s pumpkin has been opened! 🎉 Candy season is over. See you next Halloween 👻`;
+        $('#closed-make').classList.add('hidden');
         $('#closed').classList.remove('hidden');
       }
 
