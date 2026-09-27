@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fill My Pumpkin 🎃</title>
+  <meta property="og:title" content="Drop a candy in my pumpkin 🎃">
+  <meta property="og:description" content="Leave an anonymous note. It opens on Halloween.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Griffy&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1 id="title">Loading…</h1>
+
+    <div class="bucket-wrap" id="bucket">
+      <div class="pile"></div>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="countdown" id="countdown"></div>
+
+    <!-- visitor: drop a candy -->
+    <form class="card hidden" id="drop">
+      <label>Pick a candy</label>
+      <div class="candies" id="candy-picker"></div>
+
+      <label for="text">Your note</label>
+      <textarea id="text" maxlength="300" placeholder="Something you've never told them… 👀" required></textarea>
+      <div class="hint"><span id="chars">0</span>/300</div>
+
+      <label for="sender">Sign it <span style="color:var(--muted);font-weight:400">(optional, stays anonymous if blank)</span></label>
+      <input id="sender" maxlength="30" placeholder="Anonymous ghost">
+
+      <button class="btn" type="submit">Drop it in 🍬</button>
+      <div class="error" id="error" role="alert"></div>
+    </form>
+
+    <!-- visitor: after dropping -->
+    <section class="card hidden" id="dropped">
+      <label style="font-size:1.2rem">Your candy is in! 🎉</label>
+      <p class="sub" style="text-align:left;margin:0" id="dropped-msg"></p>
+      <button class="btn ghost" type="button" id="another">Drop another</button>
+      <a class="btn" href="/">🎃 Make my own pumpkin</a>
+    </section>
+
+    <!-- owner: share -->
+    <section class="card hidden" id="share">
+      <label>Share your pumpkin link 👇</label>
+      <div class="linkbox">
+        <input id="share-link" readonly>
+        <button class="btn" type="button" id="copy">Copy</button>
+      </div>
+      <button class="btn" type="button" id="native-share">📲 Post to my story</button>
+      <details style="margin-top:16px">
+        <summary style="cursor:pointer;color:var(--muted)">🔑 Save your secret owner link</summary>
+        <p class="sub" style="text-align:left;font-size:.9rem;margin:8px 0">This link is how you open your pumpkin on Halloween from any device. Don't share it!</p>
+        <div class="linkbox">
+          <input id="owner-link" readonly>
+          <button class="btn" type="button" id="copy-owner">Copy</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- owner: opened notes -->
+    <section class="hidden" id="opened">
+      <p class="sub">🎉 Happy Halloween! Tap a candy, or scroll to read them all.</p>
+      <div class="notes" id="notes"></div>
+    </section>
+
+    <!-- visitor after unlock / missing pumpkin -->
+    <section class="card hidden" id="closed">
+      <p class="sub" style="margin:0" id="closed-msg"></p>
+      <a class="btn" href="/">🎃 Make my own pumpkin</a>
+    </section>
+
+    <footer><a href="/">Fill My Pumpkin</a> · opens Oct 31</footer>
+  </main>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="note">
+      <div class="big" id="modal-candy"></div>
+      <div class="from" id="modal-from"></div>
+      <div class="text" id="modal-text"></div>
+    </div>
+  </div>
+
+  <script src="/bucket.js"></script>
+  <script src="/spooky.js"></script>
+  <script>
+    const id = location.pathname.split('/').pop();
+    const $ = (s) => document.querySelector(s);
+    const bucket = $('#bucket');
+    const pile = bucket.querySelector('.pile');
+    bucket.insertAdjacentHTML('beforeend', BUCKET_SVG);
+    Spooky.decorate({ peekInto: bucket });
+
+    // Owner links carry the token in the URL fragment (never sent to the server).
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const justCreated = hash.get('new') === '1';
+    if (hash.get('owner')) {
+      saveOwnerToken(id, hash.get('owner'), '');
+      history.replaceState(null, '', location.pathname);
+    }
+    const token = ownerTokenFor(id) || hash.get('owner');
+
+    let state = null;
+    let countdownTimer = null;
+
+    async function load(newCount = 0) {
+      const res = await fetch(`/api/pumpkins/${id}`, { headers: token ? { 'X-Owner-Token': token } : {} });
+      const data = await res.json();
+      if (!res.ok) {
+        $('#title').textContent = 'Uh oh 👻';
+        bucket.classList.add('hidden');
+        $('#closed-msg').textContent = data.error || 'This pumpkin could not be found.';
+        $('#closed').classList.remove('hidden');
+        return;
+      }
+      state = data;
+      render(newCount);
+    }
+
+    function render(newCount) {
+      const { name, count, kinds, unlocked, isOwner } = state;
+      if (isOwner) saveOwnerToken(id, token, name);
+      $('#title').textContent = isOwner ? 'Your pumpkin' : `${name}'s pumpkin`;
+      document.title = `${name}'s pumpkin 🎃`;
+      $('#count').textContent = count === 0
+        ? (isOwner ? 'Empty… for now 👀' : 'Be the first candy!')
+        : `${count} ${count === 1 ? 'candy' : 'candies'} inside`;
+
+      renderPile(pile, kinds, { newCount, clickable: isOwner });
+      startCountdown();
+
+      $('#drop').classList.toggle('hidden', isOwner || unlocked);
+      $('#share').classList.toggle('hidden', !isOwner);
+      $('#opened').classList.toggle('hidden', !(isOwner && unlocked));
+      if (!isOwner && unlocked) {
+        $('#closed-msg').textContent = `${name}'s pumpkin has been opened! 🎉 Candy season is over, but you can still carve your own.`;
+        $('#closed').classList.remove('hidden');
+      }
+
+      if (isOwner) {
+        $('#share-link').value = `${location.origin}/p/${id}`;
+        $('#owner-link').value = `${location.origin}/p/${id}#owner=${token}`;
+      }
+      if (isOwner && unlocked) renderNotes();
+    }
+
+    function startCountdown() {
+      clearInterval(countdownTimer);
+      const el = $('#countdown');
+      const tick = () => {
+        const ms = state.unlockAt - Date.now();
+        if (ms <= 0) {
+          el.textContent = '🔓 Open!';
+          if (!state.unlocked) { clearInterval(countdownTimer); load(); }
+          return;
+        }
+        const d = Math.floor(ms / 864e5);
+        const h = Math.floor(ms / 36e5) % 24;
+        const m = Math.floor(ms / 6e4) % 60;
+        const s = Math.floor(ms / 1e3) % 60;
+        el.textContent = `🔒 Opens in ${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+      };
+      tick();
+      countdownTimer = setInterval(tick, 1000);
+    }
+
+    function renderNotes() {
+      const notes = $('#notes');
+      notes.innerHTML = '';
+      state.messages.forEach((m, i) => {
+        const el = document.createElement('div');
+        el.className = 'note';
+        el.style.setProperty('--r', `${(seeded(i) - 0.5) * 4}deg`);
+        el.innerHTML = '<div class="from"></div><div class="text"></div>';
+        el.querySelector('.from').textContent = `${CANDY_EMOJI[m.candy] || '🍬'}  from ${m.sender}`;
+        el.querySelector('.text').textContent = m.text;
+        notes.appendChild(el);
+      });
+    }
+
+    // Owner taps a candy in the pile
+    pile.addEventListener('click', (e) => {
+      const c = e.target.closest('.c');
+      if (!c || !state?.isOwner) return;
+      if (!state.unlocked) {
+        c.classList.remove('wiggle');
+        void c.offsetWidth;
+        c.classList.add('wiggle');
+        Spooky.play('locked');
+        toast('No peeking! 🙈 Wait for Halloween.');
+        return;
+      }
+      const m = state.messages[Number(c.dataset.index)];
+      $('#modal-candy').textContent = CANDY_EMOJI[m.candy] || '🍬';
+      $('#modal-from').textContent = `from ${m.sender}`;
+      $('#modal-text').textContent = m.text;
+      $('#modal').classList.add('open');
+      Spooky.play('open');
+    });
+    $('#modal').addEventListener('click', () => $('#modal').classList.remove('open'));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#modal').classList.remove('open'); });
+
+    // Candy picker
+    $('#candy-picker').innerHTML = Object.entries(CANDY_EMOJI).map(([k, emoji], i) =>
+      `<label><input type="radio" name="candy" value="${k}" ${i === 0 ? 'checked' : ''} aria-label="${k}"><span>${emoji}</span></label>`
+    ).join('');
+    $('#text').addEventListener('input', (e) => { $('#chars').textContent = e.target.value.length; });
+
+    $('#drop').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type=submit]');
+      const error = $('#error');
+      btn.disabled = true;
+      error.textContent = '';
+      try {
+        const res = await fetch(`/api/pumpkins/${id}/candies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candy: document.querySelector('input[name=candy]:checked').value,
+            text: $('#text').value,
+            sender: $('#sender').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        e.target.reset();
+        $('#chars').textContent = '0';
+        $('#drop').classList.add('hidden');
+        $('#dropped-msg').textContent = `${state.name} can open it on Halloween. Your secret is safe until then 🤫`;
+        $('#dropped').classList.remove('hidden');
+        bucket.classList.add('shake');
+        Spooky.play('drop');
+        setTimeout(() => bucket.classList.remove('shake'), 600);
+        await load(1);
+        $('#drop').classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        error.textContent = err.message || 'Something went wrong. Try again?';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    $('#another').addEventListener('click', () => {
+      $('#dropped').classList.add('hidden');
+      $('#drop').classList.remove('hidden');
+      $('#text').focus();
+    });
+
+    async function copy(value, message) {
+      try { await navigator.clipboard.writeText(value); toast(message); }
+      catch { toast('Long-press the link to copy it'); }
+    }
+    $('#copy').addEventListener('click', () => copy($('#share-link').value, 'Link copied! 🎃'));
+    $('#copy-owner').addEventListener('click', () => copy($('#owner-link').value, 'Secret link copied 🔑'));
+    $('#native-share').addEventListener('click', async () => {
+      const url = $('#share-link').value;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Fill my pumpkin 🎃', text: 'Drop an anonymous candy in my pumpkin — I can only open it on Halloween 👻', url }); } catch { /* cancelled */ }
+      } else {
+        copy(url, 'Link copied! Paste it in your story 📲');
+      }
+    });
+
+    load().then(() => {
+      if (justCreated && state?.isOwner) toast('Your pumpkin is ready! Share the link 🎃');
+    });
+  </script>
+</body>
+</html>

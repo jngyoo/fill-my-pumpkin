@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fill My Pumpkin 🎃</title>
+  <meta name="description" content="Friends drop anonymous candy notes in your pumpkin. No peeking until Halloween.">
+  <meta property="og:title" content="Fill My Pumpkin 🎃">
+  <meta property="og:description" content="Drop an anonymous candy note. It opens on Halloween.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Griffy&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>Fill My<br>Pumpkin</h1>
+    <p class="sub">Friends drop anonymous candy notes into your pumpkin.<br><strong>You can't open them until Halloween.</strong> 👻</p>
+
+    <div class="bucket-wrap" id="demo">
+      <div class="pile"></div>
+    </div>
+
+    <form class="card" id="create">
+      <label for="name">Whose pumpkin is this?</label>
+      <input id="name" name="name" maxlength="30" placeholder="Your name" autocomplete="given-name" required>
+      <button class="btn" type="submit">🔪 Carve my pumpkin</button>
+      <div class="error" id="error" role="alert"></div>
+    </form>
+
+    <section class="card hidden" id="mine">
+      <label>Your pumpkins</label>
+      <div id="mine-list"></div>
+    </section>
+
+    <footer>Opens Oct 31 · Made with 🍬</footer>
+  </main>
+
+  <script src="/bucket.js"></script>
+  <script src="/spooky.js"></script>
+  <script>
+    const demo = document.querySelector('#demo');
+    demo.insertAdjacentHTML('beforeend', BUCKET_SVG);
+    const sample = ['candy', 'lollipop', 'chocolate', 'cookie', 'donut', 'cupcake', 'candy', 'lollipop', 'chocolate', 'candy', 'cookie', 'lollipop'];
+    renderPile(demo.querySelector('.pile'), sample, { newCount: sample.length });
+    Spooky.decorate({ peekInto: demo });
+
+    const mine = myPumpkins();
+    if (mine.length) {
+      document.querySelector('#mine').classList.remove('hidden');
+      document.querySelector('#mine-list').innerHTML = mine
+        .map((p) => `<a class="btn ghost" href="/p/${p.id}"></a>`)
+        .join('');
+      document.querySelectorAll('#mine-list a').forEach((a, i) => { a.textContent = `🎃 ${mine[i].name}'s pumpkin`; });
+    }
+
+    document.querySelector('#create').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      const error = document.querySelector('#error');
+      const name = document.querySelector('#name').value.trim();
+      btn.disabled = true;
+      error.textContent = '';
+      try {
+        const res = await fetch('/api/pumpkins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        saveOwnerToken(data.id, data.ownerToken, name);
+        Spooky.play('carve');
+        await new Promise((r) => setTimeout(r, 700));
+        location.href = `/p/${data.id}#owner=${data.ownerToken}&new=1`;
+      } catch (err) {
+        error.textContent = err.message || 'Something went wrong. Try again?';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
