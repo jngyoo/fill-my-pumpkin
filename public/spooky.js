@@ -78,6 +78,22 @@ const Spooky = (() => {
     open() {
       [659, 784, 988, 1319].forEach((f, i) => tone({ freq: f, type: 'triangle', start: i * 0.07, dur: 0.5, vol: 0.1 }));
     },
+    // pumpkin about to burst: rising wobbly rumble
+    rumble() {
+      tone({ freq: 70, to: 180, type: 'triangle', dur: 1.3, vol: 0.18, vibrato: 12 });
+      tone({ freq: 140, to: 360, type: 'sine', dur: 1.3, vol: 0.06, vibrato: 20 });
+    },
+    // POP! + a happy sparkle run
+    pop() {
+      tone({ freq: 900, to: 60, dur: 0.25, vol: 0.35 });
+      tone({ freq: 220, to: 50, type: 'square', dur: 0.15, vol: 0.08 });
+      [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ freq: f, type: 'triangle', start: 0.12 + i * 0.05, dur: 0.35, vol: 0.1 }));
+    },
+    // crinkly wrapper
+    unwrap() {
+      for (let i = 0; i < 7; i++) tone({ freq: 1800 + Math.random() * 1800, type: 'triangle', start: i * 0.05, dur: 0.035, vol: 0.05 });
+      tone({ freq: 300, to: 900, start: 0.3, dur: 0.22, vol: 0.12 });
+    },
     // pumpkin created: witchy cackle-ish arpeggio
     carve() {
       [440, 523, 622, 740, 880].forEach((f, i) => tone({ freq: f, type: 'sawtooth', start: i * 0.06, dur: 0.15, vol: 0.04 }));
@@ -151,6 +167,17 @@ const Spooky = (() => {
     <circle cx="53" cy="25" r="1.6" fill="#ffcf40"/>
   </svg>`;
 
+  const MOON_SVG = `
+  <svg viewBox="0 0 100 100" aria-hidden="true">
+    <defs><mask id="crescent"><rect width="100" height="100" fill="#fff"/><circle cx="68" cy="38" r="36" fill="#000"/></mask></defs>
+    <g mask="url(#crescent)">
+      <circle cx="50" cy="50" r="40" fill="#fff3c4"/>
+      <circle cx="30" cy="58" r="6" fill="#f0dd9a"/>
+      <circle cx="42" cy="78" r="4" fill="#f0dd9a"/>
+      <circle cx="22" cy="40" r="3.5" fill="#f0dd9a"/>
+    </g>
+  </svg>`;
+
   function spin(el) {
     el.classList.remove('spin');
     void el.offsetWidth;
@@ -183,6 +210,10 @@ const Spooky = (() => {
       Object.assign(el.style, { top: b.top, animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` });
       layer.appendChild(el);
     });
+    const moon = document.createElement('div');
+    moon.className = 'moon';
+    moon.innerHTML = MOON_SVG;
+    layer.appendChild(moon);
     document.body.prepend(layer);
 
     // a shy ghost peeking out from behind the pumpkin

@@ -21,7 +21,6 @@ body {
   font-family: var(--body-font);
   color: var(--text);
   background:
-    radial-gradient(circle at 94% 3%, #fff6d0 0 18px, rgba(255, 246, 208, 0.12) 19px 40px, transparent 41px),
     radial-gradient(ellipse at 50% 120%, #3d2360 0%, transparent 60%),
     var(--night);
   background-attachment: fixed;
@@ -226,43 +225,237 @@ textarea { min-height: 110px; resize: vertical; }
 .linkbox input { flex: 1; font-size: 0.9rem; }
 .linkbox .btn { width: auto; margin: 0; padding: 10px 16px; font-size: 1rem; }
 
-.notes { display: grid; gap: 12px; margin-top: 12px; }
-
-.note {
-  background: #fff4e6;
-  color: #2a1a3d;
-  padding: 14px 16px;
-  border-radius: 16px;
-  text-align: left;
-  transform: rotate(var(--r, 0deg));
-}
-
-.note .from { font-size: 0.85rem; color: #7a5a99; margin-bottom: 4px; }
-.note .text { white-space: pre-wrap; word-break: break-word; font-size: 1.05rem; line-height: 1.4; }
-
-/* ---------- modal + toast ---------- */
-
 .modal {
   position: fixed;
   inset: 0;
   display: none;
   place-items: center;
   padding: 16px;
-  background: rgba(10, 5, 20, 0.7);
+  background: rgba(10, 5, 20, 0.75);
   z-index: 10;
 }
 
 .modal.open { display: grid; }
+.modal > * { grid-area: 1 / 1; }
 
-.modal .note {
-  width: min(360px, 100%);
-  font-size: 1.1rem;
-  animation: pop 0.35s cubic-bezier(.3,1.5,.6,1);
+/* ---------- Halloween reveal ---------- */
+
+.bucket-wrap.charging svg.bucket {
+  transform-origin: 50% 100%;
+  animation: charge 1.3s ease-in forwards;
 }
 
-.modal .big { font-size: 3rem; text-align: center; margin-bottom: 8px; }
+@keyframes charge {
+  0% { transform: none; filter: drop-shadow(0 0 0 #ffb347); }
+  10% { transform: rotate(-2deg); }
+  20% { transform: rotate(2deg); }
+  30% { transform: rotate(-3deg); }
+  40% { transform: rotate(3deg) scale(1.02); }
+  50% { transform: rotate(-4deg) scale(1.03); }
+  60% { transform: rotate(5deg) scale(1.05); }
+  70% { transform: rotate(-6deg) scale(1.06); }
+  80% { transform: rotate(7deg) scale(1.08); }
+  90% { transform: rotate(-8deg) scale(1.1); }
+  100% { transform: scale(1.12); filter: drop-shadow(0 0 30px #ffb347); }
+}
 
-@keyframes pop { from { transform: scale(0.4); opacity: 0; } }
+.bucket-wrap.popping svg.bucket {
+  transform-origin: 50% 100%;
+  animation: pop-bucket 0.6s cubic-bezier(.3,1.6,.5,1);
+}
+
+@keyframes pop-bucket {
+  0% { transform: scale(1.12); }
+  25% { transform: scale(1.3, 0.72); }
+  55% { transform: scale(0.86, 1.2); }
+  80% { transform: scale(1.05, 0.95); }
+  100% { transform: none; }
+}
+
+.particle {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: fly 1.5s cubic-bezier(.15,.7,.4,1) forwards;
+}
+
+@keyframes fly {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  55% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(calc(var(--rot) * 0.6)) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx) * 1.1), calc(-50% + var(--dy) + 240px)) rotate(var(--rot)) scale(0.8); opacity: 0; }
+}
+
+.flash {
+  position: fixed;
+  z-index: 39;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(#fff, rgba(255, 200, 120, 0.7) 40%, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: flash 0.65s ease-out forwards;
+}
+
+@keyframes flash { to { transform: translate(-50%, -50%) scale(16); opacity: 0; } }
+
+#haul { margin-top: 12px; scroll-margin-top: 24px; }
+
+.haul-title {
+  font-family: var(--title-font);
+  font-weight: 400;
+  font-size: 2rem;
+  color: var(--orange);
+  margin: 8px 0 4px;
+  text-shadow: 0 3px 0 #7a2e00;
+}
+
+#haul-progress { margin: 0 0 8px; }
+
+.jar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px 8px;
+  margin: 18px 0 8px;
+}
+
+/* a wrapped sweet: round body + two twisted wrapper ends */
+.wrapped {
+  position: relative;
+  width: 96px;
+  height: 66px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transform: rotate(var(--r));
+  animation: bob var(--bob, 3s) ease-in-out var(--d) infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wrapped.enter {
+  animation: pop-in 0.55s cubic-bezier(.3,1.6,.5,1) var(--d) both, bob var(--bob, 3s) ease-in-out calc(var(--d) + 0.55s) infinite;
+}
+
+.wrapped::before,
+.wrapped::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 34px;
+  background: var(--ink);
+  opacity: 0.85;
+  transform: translateY(-50%);
+}
+
+.wrapped::before { left: 0; clip-path: polygon(0 0, 100% 42%, 100% 58%, 0 100%); }
+.wrapped::after { right: 0; clip-path: polygon(100% 0, 0 42%, 0 58%, 100% 100%); }
+
+.wrapped .sweet {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin: 3px auto 0;
+  border-radius: 50%;
+  font-size: 30px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 8px, rgba(255, 255, 255, 0.45) 8px 14px),
+    var(--paper);
+  box-shadow: 0 0 0 3px var(--ink), 0 0 18px rgba(255, 200, 120, 0.55);
+}
+
+.wrapped:not(.opened) .sweet { animation: glow 1.8s ease-in-out infinite alternate; }
+
+@keyframes glow { to { box-shadow: 0 0 0 3px var(--ink), 0 0 28px rgba(255, 210, 140, 0.9); } }
+
+.wrapped.opened { opacity: 0.55; }
+.wrapped.opened .sweet { box-shadow: 0 0 0 3px var(--ink); }
+.wrapped.opened .sweet::after { content: '💌'; position: absolute; right: -8px; bottom: -6px; font-size: 20px; }
+
+@keyframes bob {
+  0%, 100% { transform: rotate(var(--r)) translateY(0); }
+  50% { transform: rotate(var(--r)) translateY(-7px); }
+}
+
+@keyframes pop-in {
+  from { transform: rotate(var(--r)) scale(0); }
+  to { transform: rotate(var(--r)) scale(1); }
+}
+
+.unwrap-candy { display: none; font-size: 110px; line-height: 1; }
+.modal.stage-spin .unwrap-candy { display: block; animation: unwrap-spin 0.56s ease-in forwards; }
+
+@keyframes unwrap-spin {
+  0% { transform: scale(0.4) rotate(0); }
+  65% { transform: scale(1.35) rotate(540deg); }
+  100% { transform: scale(0) rotate(760deg); opacity: 0; }
+}
+
+.letter {
+  display: none;
+  position: relative;
+  width: min(340px, 100%);
+  padding: 44px 24px 18px;
+  border-radius: 18px;
+  color: var(--ink);
+  text-align: left;
+  background:
+    repeating-linear-gradient(transparent 0 33px, rgba(0, 0, 0, 0.07) 33px 34px),
+    var(--paper);
+  background-position: 0 30px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  transform: rotate(-1.5deg);
+}
+
+.modal.stage-letter .letter { display: block; animation: unfold 0.6s cubic-bezier(.2,1.3,.5,1) both; }
+
+@keyframes unfold {
+  0% { transform: perspective(700px) rotateX(-90deg) scale(0.6); opacity: 0; }
+  60% { transform: perspective(700px) rotateX(12deg) scale(1.03) rotate(-1.5deg); opacity: 1; }
+  100% { transform: rotate(-1.5deg); }
+}
+
+.letter-sticker {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%) rotate(12deg);
+  font-size: 64px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
+}
+
+.letter-count { font-size: 0.8rem; text-align: center; opacity: 0.6; margin-bottom: 6px; }
+
+.letter-text {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.9rem;
+  line-height: 34px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.letter-from {
+  font-family: 'Caveat', cursive;
+  font-weight: 500;
+  font-size: 1.4rem;
+  text-align: right;
+  margin-top: 10px;
+}
+
+.letter-hint { font-size: 0.75rem; text-align: center; opacity: 0.5; margin-top: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapped, .wrapped.enter, .wrapped .sweet { animation: none; }
+}
 
 .toast {
   position: fixed;
@@ -381,3 +574,14 @@ main { z-index: 1; }
 .bounce { animation: bounce 2.4s ease-in-out infinite; }
 @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 88% { transform: translateY(-6px); } 94% { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .bounce { animation: none; } }
+
+.moon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 58px;
+  transform: rotate(-20deg);
+  filter: drop-shadow(0 0 14px rgba(255, 238, 170, 0.55));
+}
+
+.moon svg { display: block; width: 100%; }

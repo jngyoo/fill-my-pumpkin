@@ -8,7 +8,7 @@
   <meta property="og:description" content="Leave an anonymous note. It opens on Halloween.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Griffy&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Griffy&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -22,6 +22,14 @@
     <div class="count" id="count"></div>
     <div class="countdown" id="countdown"></div>
     <button class="btn bounce hidden" type="button" id="jump"></button>
+    <button class="btn bounce hidden" type="button" id="open-btn">🎃 Open my pumpkin!</button>
+
+    <!-- owner on Halloween: the candy haul -->
+    <section class="hidden" id="haul">
+      <h2 class="haul-title" id="haul-title"></h2>
+      <p class="sub" id="haul-progress"></p>
+      <div class="jar" id="jar"></div>
+    </section>
 
     <!-- visitor: drop a candy -->
     <form class="card hidden" id="drop">
@@ -73,12 +81,6 @@
       </details>
     </section>
 
-    <!-- owner: opened notes -->
-    <section class="hidden" id="opened">
-      <p class="sub">🎉 Happy Halloween! Tap a candy, or scroll to read them all.</p>
-      <div class="notes" id="notes"></div>
-    </section>
-
     <!-- visitor after unlock / missing pumpkin -->
     <section class="card hidden" id="closed">
       <p class="sub" style="margin:0" id="closed-msg"></p>
@@ -88,16 +90,20 @@
     <footer><a href="/">Fill My Pumpkin</a> · opens Oct 31</footer>
   </main>
 
-  <div class="modal" id="modal" role="dialog" aria-modal="true">
-    <div class="note">
-      <div class="big" id="modal-candy"></div>
-      <div class="from" id="modal-from"></div>
-      <div class="text" id="modal-text"></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Candy note">
+    <div class="unwrap-candy" id="unwrap-candy"></div>
+    <div class="letter" id="letter">
+      <div class="letter-sticker" id="letter-sticker"></div>
+      <div class="letter-count" id="letter-count"></div>
+      <div class="letter-text" id="letter-text"></div>
+      <div class="letter-from" id="letter-from"></div>
+      <div class="letter-hint">tap anywhere to close</div>
     </div>
   </div>
 
   <script src="/bucket.js"></script>
   <script src="/spooky.js"></script>
+  <script src="/reveal.js"></script>
   <script>
     const id = location.pathname.split('/').pop();
     const $ = (s) => document.querySelector(s);
@@ -138,7 +144,7 @@
           unlockAt: DEMO_UNLOCK_AT, unlocked, isOwner: true, messages: unlocked ? DEMO_NOTES : null,
         };
         render(newCount);
-        if (unlocked) { Spooky.play('open'); toast('🎃 Happy Halloween! Tap a candy'); }
+        if (unlocked) { Spooky.play('open'); toast("🔓 It's Halloween! Open your pumpkin"); }
         return;
       }
       const res = await fetch(`/api/pumpkins/${id}`, { headers: token ? { 'X-Owner-Token': token } : {} });
@@ -175,9 +181,17 @@
         $('#invite span').textContent = `Leave ${name} an anonymous candy note 🍬`;
         $('#jump').textContent = `🍬 Drop a candy for ${name}`;
       }
-      $('#share').classList.toggle('hidden', !isOwner || DEMO);
+      $('#share').classList.toggle('hidden', !isOwner || DEMO || unlocked);
       $('#demo-note').classList.toggle('hidden', !DEMO);
-      $('#opened').classList.toggle('hidden', !(isOwner && unlocked));
+      if (isOwner && unlocked) {
+        Reveal.show({
+          bucket, pile, count: $('#count'), openBtn: $('#open-btn'), haul: $('#haul'), jar: $('#jar'),
+          title: $('#haul-title'), progress: $('#haul-progress'), modal: $('#modal'),
+          messages: state.messages, key: DEMO ? null : `pumpkin-opened:${id}`,
+        });
+      } else {
+        Reveal.hide();
+      }
       if (!isOwner && unlocked) {
         $('#closed-msg').textContent = `${name}'s pumpkin has been opened! 🎉 Candy season is over, but you can still carve your own.`;
         $('#closed').classList.remove('hidden');
@@ -187,7 +201,6 @@
         $('#share-link').value = `${location.origin}/p/${id}`;
         $('#owner-link').value = `${location.origin}/p/${id}#owner=${token}`;
       }
-      if (isOwner && unlocked) renderNotes();
     }
 
     function startCountdown() {
@@ -210,20 +223,6 @@
       countdownTimer = setInterval(tick, 1000);
     }
 
-    function renderNotes() {
-      const notes = $('#notes');
-      notes.innerHTML = '';
-      state.messages.forEach((m, i) => {
-        const el = document.createElement('div');
-        el.className = 'note';
-        el.style.setProperty('--r', `${(seeded(i) - 0.5) * 4}deg`);
-        el.innerHTML = '<div class="from"></div><div class="text"></div>';
-        el.querySelector('.from').textContent = `${CANDY_EMOJI[m.candy] || '🍬'}  from ${m.sender}`;
-        el.querySelector('.text').textContent = m.text;
-        notes.appendChild(el);
-      });
-    }
-
     // Visitors: the big button (or tapping the pumpkin) jumps down to the note form
     function goToForm() {
       $('#drop').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -238,23 +237,14 @@
     pile.addEventListener('click', (e) => {
       const c = e.target.closest('.c');
       if (!c || !state?.isOwner) return;
-      if (!state.unlocked) {
-        c.classList.remove('wiggle');
-        void c.offsetWidth;
-        c.classList.add('wiggle');
-        Spooky.play('locked');
-        toast('No peeking! 🙈 Wait for Halloween.');
-        return;
-      }
-      const m = state.messages[Number(c.dataset.index)];
-      $('#modal-candy').textContent = CANDY_EMOJI[m.candy] || '🍬';
-      $('#modal-from').textContent = `from ${m.sender}`;
-      $('#modal-text').textContent = m.text;
-      $('#modal').classList.add('open');
-      Spooky.play('open');
+      if (state.unlocked) return Reveal.pop();
+      c.classList.remove('wiggle');
+      void c.offsetWidth;
+      c.classList.add('wiggle');
+      Spooky.play('locked');
+      toast('No peeking! 🙈 Wait for Halloween.');
     });
-    $('#modal').addEventListener('click', () => $('#modal').classList.remove('open'));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#modal').classList.remove('open'); });
+    Reveal.wire({ openBtn: $('#open-btn'), jar: $('#jar'), modal: $('#modal') });
 
     // Candy picker
     $('#candy-picker').innerHTML = Object.entries(CANDY_EMOJI).map(([k, emoji], i) =>
