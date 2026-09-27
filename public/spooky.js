@@ -247,5 +247,5 @@ const Spooky = (() => {
     ['touchend', 'click', 'keydown'].forEach((type) => window.addEventListener(type, unlock, true));
   }
 
-  return { play, decorate };
+  return { play, decorate, GHOST_SVG, MOON_SVG };
 })();

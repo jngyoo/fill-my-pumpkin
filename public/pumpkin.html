@@ -69,7 +69,8 @@
         <input id="share-link" readonly>
         <button class="btn" type="button" id="copy">Copy</button>
       </div>
-      <button class="btn" type="button" id="native-share">📲 Post to my story</button>
+      <button class="btn" type="button" id="story-btn">📸 Share to my Instagram story</button>
+      <button class="btn outline" type="button" id="native-share">💬 Send the link</button>
       <details style="margin-top:16px">
         <summary style="cursor:pointer;color:var(--muted)">🔑 Save your secret owner link</summary>
         <p class="sub" style="text-align:left;font-size:.9rem;margin:8px 0">This link is how you open your pumpkin on Halloween from any device. Don't share it!</p>
@@ -89,6 +90,25 @@
     <footer><a href="/">Fill My Pumpkin</a> · opens Oct 31</footer>
   </main>
 
+  <!-- owner: share-to-story sheet -->
+  <div class="sheet" id="story-sheet" role="dialog" aria-modal="true" aria-label="Share to your story">
+    <div class="sheet-card">
+      <button class="sheet-close" type="button" id="story-close" aria-label="Close">✕</button>
+      <div class="story-preview-wrap">
+        <img id="story-preview" alt="Your story image">
+        <div class="story-loading">Carving your story… 🎃</div>
+      </div>
+      <p class="sub" id="story-longpress" style="margin:8px 0 0">Long-press the image → <b>Save</b>, then add it to your story</p>
+      <ol class="steps">
+        <li>Share this image to your <b>Instagram story</b></li>
+        <li>Tap the <b>sticker</b> button <span class="chip">🙂</span> → <span class="chip">🔗 LINK</span></li>
+        <li><b>Paste</b> your link <span id="story-copied"></span> and drop the sticker on the dotted box</li>
+      </ol>
+      <button class="btn" type="button" id="story-go">📸 Share image</button>
+      <a class="btn outline" id="story-save">⬇️ Save image</a>
+    </div>
+  </div>
+
   <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Candy note">
     <div class="unwrap-candy" id="unwrap-candy"></div>
     <div class="letter" id="letter">
@@ -103,6 +123,7 @@
   <script src="/bucket.js"></script>
   <script src="/spooky.js"></script>
   <script src="/reveal.js"></script>
+  <script src="/story.js"></script>
   <script>
     const id = location.pathname.split('/').pop();
     const $ = (s) => document.querySelector(s);
@@ -302,6 +323,10 @@
     }
     $('#copy').addEventListener('click', () => copy($('#share-link').value, 'Link copied! 🎃'));
     $('#copy-owner').addEventListener('click', () => copy($('#owner-link').value, 'Secret link copied 🔑'));
+    $('#story-btn').addEventListener('click', () => Story.open({ state, url: $('#share-link').value }));
+    $('#story-go').addEventListener('click', () => Story.shareImage($('#share-link').value));
+    $('#story-close').addEventListener('click', () => Story.close());
+    $('#story-sheet').addEventListener('click', (e) => { if (e.target.id === 'story-sheet') Story.close(); });
     $('#native-share').addEventListener('click', async () => {
       const url = $('#share-link').value;
       if (navigator.share) {
