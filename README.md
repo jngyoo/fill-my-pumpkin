@@ -20,8 +20,7 @@ npm run dev:unlocked # 할로윈이 이미 지난 것처럼 테스트 (별도 DB
 public/          화면 (index.html, pumpkin.html, 유령·사운드·스타일)
 lib/api.js       API 로직 (로컬 서버와 Vercel이 같이 씀)
 lib/store.js     저장소: SUPABASE_URL 있으면 Supabase, 없으면 SQLite
-api/handler.js   Vercel 서버리스 함수 입구
-dev-server.js        로컬 개발 서버
+server.js        서버 (로컬과 Vercel 둘 다 이 파일로 실행)
 supabase/schema.sql  Supabase 테이블 생성 SQL
 ```
 

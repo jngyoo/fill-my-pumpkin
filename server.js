@@ -1,4 +1,4 @@
-// Local dev server: static files + the shared API. Production runs on Vercel (see api/handler.js).
+// App server: static files + the API. Vercel runs this same file as the production entrypoint.
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
