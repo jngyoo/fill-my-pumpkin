@@ -100,11 +100,9 @@
 
     // Owner links carry the token in the URL fragment (never sent to the server).
     const hash = new URLSearchParams(location.hash.slice(1));
-    const justCreated = hash.get('new') === '1';
-    if (hash.get('owner')) {
-      saveOwnerToken(id, hash.get('owner'), '');
-      history.replaceState(null, '', location.pathname);
-    }
+    const justCreated = hash.has('new');
+    if (hash.get('owner')) saveOwnerToken(id, hash.get('owner'), '');
+    if (location.hash) history.replaceState(null, '', location.pathname);
     const token = ownerTokenFor(id) || hash.get('owner');
 
     let state = null;
