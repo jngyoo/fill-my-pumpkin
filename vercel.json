@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/p/:id", "destination": "/pumpkin.html" },
+    { "source": "/api/:path*", "destination": "/api/handler?p=:path*" }
+  ]
+}
