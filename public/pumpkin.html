@@ -47,6 +47,14 @@
       <a class="btn" href="/">🎃 Make my own pumpkin</a>
     </section>
 
+    <!-- demo mode banner -->
+    <section class="card hidden" id="demo-note">
+      <label>🧪 Demo pumpkin</label>
+      <p class="sub" style="text-align:left;margin:0">This is what opening your pumpkin looks like on Halloween. It unlocks 10 seconds after the page loads. Nothing here is real.</p>
+      <button class="btn outline" type="button" onclick="location.reload()">↻ Replay</button>
+      <a class="btn" href="/">🎃 Make my real pumpkin</a>
+    </section>
+
     <!-- owner: share -->
     <section class="card hidden" id="share">
       <label>Share your pumpkin link 👇</label>
@@ -108,7 +116,31 @@
     let state = null;
     let countdownTimer = null;
 
+    // /p/demoopen: a fake, owner-view pumpkin that "unlocks" 10 seconds after loading, so the
+    // Halloween reveal can be tried any time. Real ids never contain an "o", so it can't collide.
+    const DEMO = id === 'demoopen';
+    const DEMO_UNLOCK_AT = Date.now() + 10_000;
+    const DEMO_NOTES = [
+      ['lollipop', 'Your study group', 'Honestly you carried our team project 🙏'],
+      ['chocolate', 'Anonymous ghost', 'Still thinking about your karaoke at the retreat 🎤'],
+      ['cupcake', 'A classmate', "Let's actually grab that coffee this time 😂"],
+      ['candy', 'Anonymous ghost', 'You make 8am finance bearable'],
+      ['donut', 'Your roommate', 'Please stop leaving your mugs in the sink. Love you tho 💜'],
+      ['cookie', 'Anonymous ghost', 'I have a tiny crush on you 👀'],
+      ['lollipop', 'Anonymous ghost', 'Best Halloween costume award goes to you (in advance)'],
+    ].map(([candy, sender, text]) => ({ candy, sender, text }));
+
     async function load(newCount = 0) {
+      if (DEMO) {
+        const unlocked = Date.now() >= DEMO_UNLOCK_AT;
+        state = {
+          name: 'Demo', count: DEMO_NOTES.length, kinds: DEMO_NOTES.map((n) => n.candy),
+          unlockAt: DEMO_UNLOCK_AT, unlocked, isOwner: true, messages: unlocked ? DEMO_NOTES : null,
+        };
+        render(newCount);
+        if (unlocked) { Spooky.play('open'); toast('🎃 Happy Halloween! Tap a candy'); }
+        return;
+      }
       const res = await fetch(`/api/pumpkins/${id}`, { headers: token ? { 'X-Owner-Token': token } : {} });
       const data = await res.json();
       if (!res.ok) {
@@ -124,7 +156,7 @@
 
     function render(newCount) {
       const { name, count, kinds, unlocked, isOwner } = state;
-      if (isOwner) saveOwnerToken(id, token, name);
+      if (isOwner && !DEMO) saveOwnerToken(id, token, name);
       $('#title').textContent = isOwner ? 'Your pumpkin' : `${name}'s pumpkin`;
       document.title = `${name}'s pumpkin 🎃`;
       $('#count').textContent = count === 0
@@ -143,7 +175,8 @@
         $('#invite span').textContent = `Leave ${name} an anonymous candy note 🍬`;
         $('#jump').textContent = `🍬 Drop a candy for ${name}`;
       }
-      $('#share').classList.toggle('hidden', !isOwner);
+      $('#share').classList.toggle('hidden', !isOwner || DEMO);
+      $('#demo-note').classList.toggle('hidden', !DEMO);
       $('#opened').classList.toggle('hidden', !(isOwner && unlocked));
       if (!isOwner && unlocked) {
         $('#closed-msg').textContent = `${name}'s pumpkin has been opened! 🎉 Candy season is over, but you can still carve your own.`;
