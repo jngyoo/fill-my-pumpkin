@@ -3,6 +3,9 @@ const { handleApi } = require('../lib/api');
 
 module.exports = async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
-  const pathname = url.pathname === '/api/handler' ? `/api/${url.searchParams.get('p') || ''}` : url.pathname;
+  const p = url.searchParams.get('p') ?? req.query?.p;
+  const rest = Array.isArray(p) ? p.join('/') : p;
+  const pathname = rest ? `/api/${rest.replace(/^\/+/, '')}` : url.pathname;
+  res.setHeader('X-Debug-Route', `${req.url} -> ${pathname}`);
   await handleApi(req, res, pathname);
 };
