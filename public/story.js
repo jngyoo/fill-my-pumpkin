@@ -16,6 +16,33 @@ const Story = (() => {
     });
   }
 
+  // Draw the bucket directly: avoid SVG image compositing and image shadows on mobile.
+  function drawBucket(ctx, x, y, width, height) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(width / 300, height / 250);
+    const path = (d, fill, stroke, lineWidth = 1) => {
+      const shape = new Path2D(d);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(shape); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lineWidth; ctx.stroke(shape); }
+    };
+    const ellipse = (x, y, rx, ry, fill, rotation = 0) => {
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rotation, 0, Math.PI * 2);
+      ctx.fillStyle = fill; ctx.fill();
+    };
+    ctx.lineCap = 'round';
+    path('M60 70 Q150 -40 240 70', null, '#3a2a1a', 9);
+    ellipse(150, 157, 140, 93, 'rgba(0,0,0,0.2)');
+    ellipse(150, 150, 140, 100, '#ff7a1a');
+    path('M95 60 Q70 150 95 245 M205 60 Q230 150 205 245 M150 50 L150 250', null, 'rgba(224,90,0,0.55)', 6);
+    ellipse(150, 62, 100, 18, '#4a1e00');
+    path('M85 125 L115 110 L115 140 Z', '#2a1000');
+    path('M215 125 L185 110 L185 140 Z', '#2a1000');
+    path('M90 175 Q150 225 210 175 L195 180 L185 195 L170 184 L150 200 L130 184 L115 195 L105 180 Z', '#2a1000');
+    ellipse(95, 95, 18, 30, 'rgba(255,255,255,0.18)', -25 * Math.PI / 180);
+    ctx.restore();
+  }
+
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -71,8 +98,7 @@ const Story = (() => {
       ctx.fill();
     }
 
-    const [bucket, ghost, moon] = await Promise.all([
-      svgImage(BUCKET_SVG, 300, 250),
+    const [ghost, moon] = await Promise.all([
       svgImage(Spooky.GHOST_SVG, 100, 120),
       svgImage(Spooky.MOON_SVG, 100, 100),
     ]);
@@ -97,13 +123,7 @@ const Story = (() => {
       ctx.drawImage(ghost, -50, -60, 100, 120);
       ctx.restore();
     }
-    if (bucket) {
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowOffsetY = 18;
-      ctx.drawImage(bucket, wrapX, wrapY + wrapH - bucketH, wrapW, bucketH);
-      ctx.restore();
-    }
+    drawBucket(ctx, wrapX, wrapY + wrapH - bucketH, wrapW, bucketH);
     const pileX = wrapX + wrapW * 0.2;
     const pileW = wrapW * 0.6;
     const pileH = wrapH * 0.4;
