@@ -15,7 +15,6 @@
   <main>
     <h1 id="title">Loading…</h1>
     <p class="sub hidden" id="invite"></p>
-    <a class="btn outline hidden" id="manage" href="#">Manage my pumpkin</a>
 
     <div class="bucket-wrap" id="bucket">
       <div class="pile"></div>
@@ -88,7 +87,10 @@
       <a class="btn" href="/" id="closed-make">🎃 Make my own pumpkin</a>
     </section>
 
-    <footer><a href="/">Fill My Pumpkin</a> · opens Oct 31</footer>
+    <footer>
+      <a href="/">Fill My Pumpkin</a> · opens Oct 31
+      <div id="manage" class="hidden" style="margin-top:16px;font-size:0.8rem"><a id="manage-link" href="#">Manage my pumpkin</a></div>
+    </footer>
   </main>
 
   <!-- owner: share-to-story sheet -->
@@ -195,7 +197,7 @@
       startCountdown();
 
       const canDrop = !isOwner && !unlocked;
-      $('#manage').href = `/p/${id}?view=owner`;
+      $('#manage-link').href = `/p/${id}?view=owner`;
       $('#manage').classList.toggle('hidden', !token || isOwner || DEMO);
       if (canDrop) $('#invite').after($('#drop')); 
       $('#drop').classList.toggle('hidden', !canDrop);
