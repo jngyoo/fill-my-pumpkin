@@ -49,7 +49,7 @@
     if (mine.length) {
       document.querySelector('#mine').classList.remove('hidden');
       document.querySelector('#mine-list').innerHTML = mine
-        .map((p) => `<a class="btn outline" href="/p/${p.id}"></a>`)
+        .map((p) => `<a class="btn outline" href="/p/${p.id}?view=owner"></a>`)
         .join('');
       document.querySelectorAll('#mine-list a').forEach((a, i) => { a.textContent = `🎃 ${mine[i].name}'s pumpkin`; });
     }
@@ -75,7 +75,7 @@
         // Keep the owner token out of the URL: in-app browsers (KakaoTalk, Instagram) share the
         // original address, which would hand friends the key. Only fall back if storage is blocked.
         const stored = ownerTokenFor(data.id) === data.ownerToken;
-        location.href = stored ? `/p/${data.id}#new` : `/p/${data.id}#owner=${data.ownerToken}&new`;
+        location.href = stored ? `/p/${data.id}?view=owner#new` : `/p/${data.id}#owner=${data.ownerToken}&new`;
       } catch (err) {
         error.textContent = err.message || 'Something went wrong. Try again?';
         btn.disabled = false;

@@ -15,6 +15,7 @@
   <main>
     <h1 id="title">Loading…</h1>
     <p class="sub hidden" id="invite"></p>
+    <a class="btn outline hidden" id="manage" href="#">Manage my pumpkin</a>
 
     <div class="bucket-wrap" id="bucket">
       <div class="pile"></div>
@@ -135,8 +136,9 @@
     // Owner links carry the token in the URL fragment (never sent to the server).
     const hash = new URLSearchParams(location.hash.slice(1));
     const justCreated = hash.has('new');
+    const ownerView = new URLSearchParams(location.search).get('view') === 'owner' || hash.has('owner') || justCreated;
     if (hash.get('owner')) saveOwnerToken(id, hash.get('owner'), '');
-    if (location.hash) history.replaceState(null, '', location.pathname);
+    if (location.hash) history.replaceState(null, '', location.pathname + (ownerView ? '?view=owner' : ''));
     const token = ownerTokenFor(id) || hash.get('owner');
 
     let state = null;
@@ -167,7 +169,7 @@
         if (unlocked) { Spooky.play('open'); toast("🔓 It's Halloween! Open your pumpkin"); }
         return;
       }
-      const res = await fetch(`/api/pumpkins/${id}`, { headers: token ? { 'X-Owner-Token': token } : {} });
+      const res = await fetch(`/api/pumpkins/${id}`, { cache: 'no-store', headers: ownerView && token ? { 'X-Owner-Token': token } : {} });
       const data = await res.json();
       if (!res.ok) {
         $('#title').textContent = 'Uh oh 👻';
@@ -193,6 +195,9 @@
       startCountdown();
 
       const canDrop = !isOwner && !unlocked;
+      $('#manage').href = `/p/${id}?view=owner`;
+      $('#manage').classList.toggle('hidden', !token || isOwner || DEMO);
+      if (canDrop) $('#invite').after($('#drop')); 
       $('#drop').classList.toggle('hidden', !canDrop);
       $('#invite').classList.toggle('hidden', !canDrop);
       $('#jump').classList.toggle('hidden', !canDrop);
