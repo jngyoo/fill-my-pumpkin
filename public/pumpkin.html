@@ -138,9 +138,13 @@
     const hash = new URLSearchParams(location.hash.slice(1));
     const justCreated = hash.has('new');
     const ownerView = new URLSearchParams(location.search).get('view') === 'owner' || hash.has('owner') || justCreated;
-    if (hash.get('owner')) saveOwnerToken(id, hash.get('owner'), '');
+    const savedToken = ownerTokenFor(id);
+    const linkToken = hash.get('owner');
+    const token = linkToken || savedToken;
+    // Preserve first-visit recovery before stripping the link. Replace an existing
+    // owner key only when the server confirms the new one in render().
+    if (linkToken && !savedToken) saveOwnerToken(id, linkToken, '');
     if (location.hash) history.replaceState(null, '', location.pathname + (ownerView ? '?view=owner' : ''));
-    const token = ownerTokenFor(id) || hash.get('owner');
 
     let state = null;
     let countdownTimer = null;
